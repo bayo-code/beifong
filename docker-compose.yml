@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: beifong-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - beifong-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: beifong-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENSLAB_API_KEY=${ELEVENSLAB_API_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+    volumes:
+      - ./beifong:/app/beifong
+      - databases:/app/beifong/databases
+      - podcasts:/app/beifong/podcasts
+      - browsers:/app/beifong/browsers
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - beifong-network
+    command: python main.py --host 0.0.0.0 --port 8000
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: beifong-scheduler
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENSLAB_API_KEY=${ELEVENSLAB_API_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+    volumes:
+      - ./beifong:/app/beifong
+      - databases:/app/beifong/databases
+      - podcasts:/app/beifong/podcasts
+      - browsers:/app/beifong/browsers
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - beifong-network
+    command: python -m scheduler
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: beifong-celery-worker
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELEVENSLAB_API_KEY=${ELEVENSLAB_API_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+    volumes:
+      - ./beifong:/app/beifong
+      - databases:/app/beifong/databases
+      - podcasts:/app/beifong/podcasts
+      - browsers:/app/beifong/browsers
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - beifong-network
+    command: python -m celery_worker
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: beifong-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - beifong-network
+
+volumes:
+  redis-data:
+  databases:
+  podcasts:
+  browsers:
+
+networks:
+  beifong-network:
+    driver: bridge

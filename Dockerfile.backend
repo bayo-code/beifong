@@ -1,0 +1,53 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies required for Python packages and Playwright
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    gfortran \
+    libopenblas-dev \
+    liblapack-dev \
+    pkg-config \
+    git \
+    curl \
+    wget \
+    libffi-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    libpng-dev \
+    ffmpeg \
+    espeak-ng \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY beifong/requirements.txt .
+
+# Install Python dependencies
+# Note: Some packages like kokoro, faiss-cpu might fail - they are optional
+RUN pip install --no-cache-dir -r requirements.txt || true
+
+# Install Playwright browsers
+RUN python -m playwright install-deps && \
+    python -m playwright install
+
+# Copy the beifong application directory
+COPY beifong /app/beifong
+
+# Set working directory to beifong subdirectory
+WORKDIR /app/beifong
+
+# Create necessary directories
+RUN mkdir -p databases podcasts browsers
+
+# Expose port for the backend
+EXPOSE 8000
+
+# Default command (can be overridden in docker-compose)
+CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
