@@ -50,7 +50,7 @@ docker-compose up -d
 
 This will start:
 - Redis (database)
-- Backend API (port 8000)
+- Backend API (port 7000)
 - Scheduler (background tasks)
 - Celery Worker (AI chat processing)
 - Frontend (port 3000)
@@ -58,8 +58,8 @@ This will start:
 ### 4. Access the Application
 
 - **Frontend UI**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
+- **Backend API**: http://localhost:7000
+- **API Documentation**: http://localhost:7000/docs
 
 ### 5. Bootstrap Demo Data (Optional)
 
@@ -143,13 +143,13 @@ docker-compose logs
 
 ### Port Already in Use
 
-If ports 3000 or 8000 are already in use, edit `docker-compose.yml`:
+If ports 3000 or 7000 are already in use, edit `docker-compose.yml`:
 
 ```yaml
 services:
   backend:
     ports:
-      - "8080:8000"  # Change 8000 to 8080
+      - "8080:7000"  # Change 7000 to 8080
 
   frontend:
     ports:
@@ -246,7 +246,7 @@ To access from other machines on your network:
 ```bash
 # Edit docker-compose.yml backend ports
 ports:
-  - "0.0.0.0:8000:8000"
+  - "0.0.0.0:7000:7000"
 ```
 
 ### Add Additional Services
