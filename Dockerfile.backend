@@ -34,8 +34,7 @@ COPY beifong/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt || true
 
 # Install Playwright browsers
-RUN python -m playwright install-deps && \
-    python -m playwright install
+RUN python -m playwright install
 
 # Copy the beifong application directory
 COPY beifong /app/beifong
